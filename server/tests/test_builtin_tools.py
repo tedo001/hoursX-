@@ -27,9 +27,7 @@ async def test_fs_write_read_list_roundtrip(tmp_path):
         _call("fs.write", path="notes/hello.txt", content="hi there"), ctx, grants=grants
     )
     assert write.ok
-    read = await executor.execute(
-        _call("fs.read", path="notes/hello.txt"), ctx, grants=grants
-    )
+    read = await executor.execute(_call("fs.read", path="notes/hello.txt"), ctx, grants=grants)
     assert read.ok and read.data["content"] == "hi there"
     listing = await executor.execute(_call("fs.list", path="notes"), ctx, grants=grants)
     assert listing.ok and listing.data["entries"] == ["hello.txt"]
@@ -37,9 +35,7 @@ async def test_fs_write_read_list_roundtrip(tmp_path):
 
 async def test_fs_read_missing_file_guides_model(tmp_path):
     executor, ctx = _setup(tmp_path)
-    outcome = await executor.execute(
-        _call("fs.read", path="nope.txt"), ctx, grants=["fs.*"]
-    )
+    outcome = await executor.execute(_call("fs.read", path="nope.txt"), ctx, grants=["fs.*"])
     assert not outcome.ok and "fs.list" in outcome.summary
 
 
@@ -58,9 +54,7 @@ async def test_shell_run_captures_output_and_exit(tmp_path):
         _call("shell.run", command="echo out; echo err 1>&2"), ctx, grants=["shell.run"]
     )
     assert ok.ok and "out" in ok.data["stdout"] and "err" in ok.data["stderr"]
-    fail = await executor.execute(
-        _call("shell.run", command="exit 3"), ctx, grants=["shell.run"]
-    )
+    fail = await executor.execute(_call("shell.run", command="exit 3"), ctx, grants=["shell.run"])
     assert not fail.ok and fail.data["exit_code"] == 3
 
 
@@ -101,18 +95,14 @@ async def test_git_tools_roundtrip(tmp_path):
     setup = await executor.execute(
         _call(
             "shell.run",
-            command=(
-                "git init -q && git config user.email t@t.t && git config user.name T"
-            ),
+            command=("git init -q && git config user.email t@t.t && git config user.name T"),
         ),
         ctx,
         grants=grants,
     )
     assert setup.ok
     (tmp_path / "f.txt").write_text("v1")
-    commit = await executor.execute(
-        _call("git.commit", message="add f.txt"), ctx, grants=grants
-    )
+    commit = await executor.execute(_call("git.commit", message="add f.txt"), ctx, grants=grants)
     assert commit.ok
     status = await executor.execute(_call("git.status"), ctx, grants=grants)
     assert status.ok

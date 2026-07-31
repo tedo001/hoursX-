@@ -35,12 +35,16 @@ async def list_schedules(
 ) -> list[ScheduleOut]:
     async with services.db.session() as db:
         rows = (
-            await db.execute(
-                select(Schedule)
-                .where(Schedule.workspace_id == actor.workspace.id)
-                .order_by(Schedule.created_at)
+            (
+                await db.execute(
+                    select(Schedule)
+                    .where(Schedule.workspace_id == actor.workspace.id)
+                    .order_by(Schedule.created_at)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return [_out(row) for row in rows]
 
 

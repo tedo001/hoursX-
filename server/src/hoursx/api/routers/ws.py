@@ -30,12 +30,16 @@ async def event_socket(websocket: WebSocket, token: str = Query(default="")) -> 
     async with services.db.session() as db:
         user = await db.get(User, user_id)
         membership = (
-            await db.execute(
-                select(WorkspaceMember)
-                .where(WorkspaceMember.user_id == user_id)
-                .order_by(WorkspaceMember.created_at)
+            (
+                await db.execute(
+                    select(WorkspaceMember)
+                    .where(WorkspaceMember.user_id == user_id)
+                    .order_by(WorkspaceMember.created_at)
+                )
             )
-        ).scalars().first()
+            .scalars()
+            .first()
+        )
     if user is None or not user.is_active or membership is None:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return

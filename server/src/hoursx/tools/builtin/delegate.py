@@ -27,9 +27,7 @@ async def _delegate(args: DelegateArgs, ctx: ToolContext) -> ToolOutcome:
     try:
         answer = await ctx.delegate(args.agent, args.goal)
     except LookupError:
-        return ToolOutcome.failure(
-            f"No agent named {args.agent!r} exists in this workspace."
-        )
+        return ToolOutcome.failure(f"No agent named {args.agent!r} exists in this workspace.")
     return ToolOutcome.success(f"Agent {args.agent!r} finished.", answer=answer)
 
 

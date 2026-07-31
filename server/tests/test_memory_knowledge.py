@@ -107,9 +107,7 @@ async def test_knowledge_reingest_is_idempotent(services, seeded):
     async with services.db.session() as db:
         count = (
             await db.execute(
-                select(func.count(DocumentChunk.id)).where(
-                    DocumentChunk.document_id == doc_id
-                )
+                select(func.count(DocumentChunk.id)).where(DocumentChunk.document_id == doc_id)
             )
         ).scalar_one()
     assert count == 1

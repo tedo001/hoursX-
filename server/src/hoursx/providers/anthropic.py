@@ -97,11 +97,7 @@ class AnthropicProvider:
         usage = body.get("usage", {})
         stop = body.get("stop_reason")
         finish = (
-            "tool_calls"
-            if stop == "tool_use"
-            else "length"
-            if stop == "max_tokens"
-            else "stop"
+            "tool_calls" if stop == "tool_use" else "length" if stop == "max_tokens" else "stop"
         )
         return ChatResult(
             message=ChatMessage(role=ChatRole.ASSISTANT, content=text, tool_calls=tool_calls),

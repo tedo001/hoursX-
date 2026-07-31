@@ -61,9 +61,7 @@ async def _browse(args: BrowseArgs, ctx: ToolContext) -> ToolOutcome:
             text = (await page.inner_text("body"))[:_BODY_CAP]
         finally:
             await browser.close()
-    return ToolOutcome.success(
-        f"Rendered {args.url} — {title!r}", title=title, text=text
-    )
+    return ToolOutcome.success(f"Rendered {args.url} — {title!r}", title=title, text=text)
 
 
 def register_web_tools(registry: ToolRegistry) -> None:

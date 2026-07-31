@@ -56,9 +56,7 @@ async def _resolve_user(
             user = await db.get(User, record.user_id)
         elif authorization and authorization.lower().startswith("bearer "):
             try:
-                user_id = verify_token(
-                    authorization[7:], secret=services.settings.jwt_secret
-                )
+                user_id = verify_token(authorization[7:], secret=services.settings.jwt_secret)
             except TokenError as exc:
                 raise HTTPException(status.HTTP_401_UNAUTHORIZED, str(exc)) from exc
             user = await db.get(User, user_id)

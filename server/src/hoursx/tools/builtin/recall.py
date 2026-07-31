@@ -38,8 +38,7 @@ async def _knowledge_search(args: SearchArgs, ctx: ToolContext) -> ToolOutcome:
     return ToolOutcome.success(
         f"{len(hits)} knowledge excerpts for {args.query!r}",
         excerpts=[
-            {"document": hit.document_title, "score": hit.score, "text": hit.text}
-            for hit in hits
+            {"document": hit.document_title, "score": hit.score, "text": hit.text} for hit in hits
         ],
     )
 

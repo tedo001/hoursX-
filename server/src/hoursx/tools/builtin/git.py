@@ -71,9 +71,7 @@ async def _commit(args: CommitArgs, ctx: ToolContext) -> ToolOutcome:
             return ToolOutcome.failure(f"git add failed: {out.strip()}")
     code, out = await _git(ctx.sandbox_dir, "commit", "-m", args.message)
     if code != 0:
-        return ToolOutcome.failure(
-            f"git commit failed: {out.strip() or 'nothing to commit'}"
-        )
+        return ToolOutcome.failure(f"git commit failed: {out.strip() or 'nothing to commit'}")
     return ToolOutcome.success("Committed", output=out)
 
 

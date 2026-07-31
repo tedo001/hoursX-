@@ -88,9 +88,7 @@ class Conductor:
 
     # -------------------------------------------------------------- approvals
 
-    async def decide_approval(
-        self, *, approval_id: str, decided_by: str, approved: bool
-    ) -> None:
+    async def decide_approval(self, *, approval_id: str, decided_by: str, approved: bool) -> None:
         """Record a human decision and resume the parked run."""
         async with self._services.db.session() as db:
             request = await db.get(ApprovalRequest, approval_id)

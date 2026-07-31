@@ -211,9 +211,7 @@ class AgentRuntime:
             delegate=self._delegate_fn(snap, depth) if snap.profile.can_delegate else None,
         )
         ctx.sandbox_dir.mkdir(parents=True, exist_ok=True)
-        invocation = ToolInvocation(
-            call_id=call.id, tool_name=call.name, arguments=call.arguments
-        )
+        invocation = ToolInvocation(call_id=call.id, tool_name=call.name, arguments=call.arguments)
         outcome = await services.executor.execute(
             invocation, ctx, grants=list(snap.profile.tool_grants), approved=approved
         )
@@ -270,9 +268,7 @@ class AgentRuntime:
 
     # ----------------------------------------------------------------- helpers
 
-    async def _claim(
-        self, run_id: str, *, from_status: tuple[str, ...]
-    ) -> RunSnap | None:
+    async def _claim(self, run_id: str, *, from_status: tuple[str, ...]) -> RunSnap | None:
         """Load + snapshot the run and mark it running (one short transaction)."""
         async with self._services.db.session() as db:
             run = await db.get(Run, run_id)
@@ -287,9 +283,7 @@ class AgentRuntime:
             run.status = "running"
             run.checkpoint = None
             step_seq = (
-                await db.execute(
-                    select(func.count(RunStep.id)).where(RunStep.run_id == run_id)
-                )
+                await db.execute(select(func.count(RunStep.id)).where(RunStep.run_id == run_id))
             ).scalar_one()
             return RunSnap(
                 run_id=run.id,
@@ -324,9 +318,7 @@ class AgentRuntime:
             # Child runs get a clean transcript: their goal is self-contained and
             # parent history would leak unrelated context.
             history = (
-                []
-                if is_child
-                else await services.memory.conversation_history(db, snap.session_id)
+                [] if is_child else await services.memory.conversation_history(db, snap.session_id)
             )
         builder = ContextBuilder(
             token_budget=services.settings.context_token_budget,
@@ -420,9 +412,7 @@ class AgentRuntime:
 
     async def _record_step(self, snap: RunSnap, kind: str, detail: dict) -> None:
         async with self._services.db.session() as db:
-            db.add(
-                RunStep(run_id=snap.run_id, index=snap.step_seq, kind=kind, detail=detail)
-            )
+            db.add(RunStep(run_id=snap.run_id, index=snap.step_seq, kind=kind, detail=detail))
         snap.step_seq += 1
 
     async def _emit(self, snap: RunSnap, type_: EventType, payload: dict) -> None:

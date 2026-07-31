@@ -44,9 +44,7 @@ async def _run(args: ShellArgs, ctx: ToolContext) -> ToolOutcome:
         stderr=asyncio.subprocess.PIPE,
     )
     try:
-        stdout, stderr = await asyncio.wait_for(
-            process.communicate(), timeout=args.timeout_seconds
-        )
+        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=args.timeout_seconds)
     except asyncio.TimeoutError:
         process.kill()
         await process.wait()

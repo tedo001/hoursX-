@@ -8,7 +8,17 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from hoursx import __version__
-from hoursx.api.routers import admin, agents, auth, knowledge, plugins, runs, schedules, sessions, ws
+from hoursx.api.routers import (
+    admin,
+    agents,
+    auth,
+    knowledge,
+    plugins,
+    runs,
+    schedules,
+    sessions,
+    ws,
+)
 from hoursx.config import get_settings
 from hoursx.observability import configure_logging, new_request_id, request_id_var
 from hoursx.orchestration import Conductor

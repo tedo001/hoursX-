@@ -12,11 +12,11 @@ from hoursx.tools.base import Tool
 class PluginPermission(str, Enum):
     """Capabilities a plugin can request; operators grant a subset at install."""
 
-    NETWORK = "network"          # outbound HTTP
-    FILESYSTEM = "filesystem"    # session-sandbox file access
-    SHELL = "shell"              # subprocess execution
-    KNOWLEDGE = "knowledge"      # read the workspace knowledge base
-    MEMORY = "memory"            # read/write long-term memory
+    NETWORK = "network"  # outbound HTTP
+    FILESYSTEM = "filesystem"  # session-sandbox file access
+    SHELL = "shell"  # subprocess execution
+    KNOWLEDGE = "knowledge"  # read the workspace knowledge base
+    MEMORY = "memory"  # read/write long-term memory
 
 
 class PluginTool(BaseModel):

@@ -23,10 +23,10 @@ from hoursx.providers.types import ToolDescriptor
 class ToolSpec:
     """Identity and policy for one tool."""
 
-    name: str                       # namespaced: "fs.read", "shell.run"
+    name: str  # namespaced: "fs.read", "shell.run"
     description: str
     params_model: type[BaseModel]
-    requires_approval: bool = False # human gate before every execution
+    requires_approval: bool = False  # human gate before every execution
     timeout_seconds: float | None = None  # override the platform default
 
     def descriptor(self) -> ToolDescriptor:
@@ -72,7 +72,7 @@ class ToolContext:
     session_id: str
     run_id: str
     sandbox_dir: Path
-    services: Any = None          # AppServices (router, memory, knowledge, db)
+    services: Any = None  # AppServices (router, memory, knowledge, db)
     delegate: DelegateFn | None = None
     working_notes: list[str] = field(default_factory=list)
 

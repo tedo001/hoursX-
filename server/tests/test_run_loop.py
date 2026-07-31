@@ -30,9 +30,7 @@ async def _submit_and_wait(services, conductor, seeded, text: str) -> Run:
         return run
 
 
-async def test_plain_answer_persists_message_and_finishes(
-    services, conductor, seeded, echo
-):
+async def test_plain_answer_persists_message_and_finishes(services, conductor, seeded, echo):
     run = await _submit_and_wait(services, conductor, seeded, "hello agent")
     assert run.status == "succeeded"
     assert run.final_answer == "echo: hello agent"
@@ -86,8 +84,7 @@ async def test_tool_failure_feeds_guidance_not_crash(services, conductor, seeded
 
 async def test_step_limit_records_failure(services, conductor, seeded, echo):
     echo._script = [
-        _tool_turn(ToolCall(id=f"c{i}", name="fs.list", arguments={"path": "."}))
-        for i in range(5)
+        _tool_turn(ToolCall(id=f"c{i}", name="fs.list", arguments={"path": "."})) for i in range(5)
     ]
     async with services.db.session() as db:
         profile = await db.get(AgentProfile, seeded.profile_id)
@@ -109,11 +106,7 @@ async def test_ungranted_tool_is_reported_to_model(services, conductor, seeded, 
     run = await _submit_and_wait(services, conductor, seeded, "try shell")
     assert run.status == "succeeded"
     async with services.db.session() as db:
-        steps = (
-            (await db.execute(select(RunStep).where(RunStep.run_id == run.id)))
-            .scalars()
-            .all()
-        )
+        steps = (await db.execute(select(RunStep).where(RunStep.run_id == run.id))).scalars().all()
     assert any(step.kind == "tool" for step in steps)
 
 
@@ -122,14 +115,10 @@ async def test_approval_pause_and_approved_resume(services, seeded, echo):
     from hoursx.tools.executor import ToolExecutor
 
     # Operator policy: shell.run needs a human.
-    services.executor = ToolExecutor(
-        services.registry, force_approval=frozenset({"shell.run"})
-    )
+    services.executor = ToolExecutor(services.registry, force_approval=frozenset({"shell.run"}))
     conductor = Conductor(services)
     echo._script = [
-        _tool_turn(
-            ToolCall(id="c1", name="shell.run", arguments={"command": "echo approved-run"})
-        ),
+        _tool_turn(ToolCall(id="c1", name="shell.run", arguments={"command": "echo approved-run"})),
         _final_turn("command done"),
     ]
     run_id = await conductor.submit_message(
@@ -162,9 +151,7 @@ async def test_denied_approval_lets_agent_continue(services, seeded, echo):
     from hoursx.db.models import ApprovalRequest
     from hoursx.tools.executor import ToolExecutor
 
-    services.executor = ToolExecutor(
-        services.registry, force_approval=frozenset({"shell.run"})
-    )
+    services.executor = ToolExecutor(services.registry, force_approval=frozenset({"shell.run"}))
     conductor = Conductor(services)
     echo._script = [
         _tool_turn(ToolCall(id="c1", name="shell.run", arguments={"command": "echo hi"})),
@@ -219,11 +206,7 @@ async def test_delegation_runs_child_and_returns_answer(services, conductor, see
     assert run.status == "succeeded"
     assert run.final_answer == "the researcher found: 42"
     async with services.db.session() as db:
-        child = (
-            (await db.execute(select(Run).where(Run.parent_run_id == run.id)))
-            .scalars()
-            .one()
-        )
+        child = (await db.execute(select(Run).where(Run.parent_run_id == run.id))).scalars().one()
     assert child.status == "succeeded" and child.final_answer == "research result: 42"
 
 

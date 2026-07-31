@@ -21,8 +21,8 @@ from pydantic import BaseModel, Field
 
 class EventType(str, Enum):
     RUN_STARTED = "run.started"
-    RUN_DELTA = "run.delta"          # streamed model text
-    RUN_STEP = "run.step"            # a completed model/tool step
+    RUN_DELTA = "run.delta"  # streamed model text
+    RUN_STEP = "run.step"  # a completed model/tool step
     RUN_AWAITING_APPROVAL = "run.awaiting_approval"
     RUN_FINISHED = "run.finished"
     APPROVAL_DECIDED = "approval.decided"
