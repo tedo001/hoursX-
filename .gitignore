@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+npm-debug.log*
+
+# Runtime state
+*.sqlite3
+workspaces/
+plugins/
+.env
+.env.local
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
