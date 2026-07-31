@@ -16,9 +16,7 @@ async def ingest_and_announce(services: AppServices, document_id: str, text: str
     workspace_id = ""
     try:
         async with services.db.session() as db:
-            chunk_count = await services.knowledge.ingest(
-                db, document_id=document_id, text=text
-            )
+            chunk_count = await services.knowledge.ingest(db, document_id=document_id, text=text)
             document = await db.get(Document, document_id)
             assert document is not None
             workspace_id = document.workspace_id

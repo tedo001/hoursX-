@@ -66,9 +66,7 @@ def build_services(
         bus=bus,
         router=router,
         memory=MemoryManager(router),
-        knowledge=KnowledgeEngine(
-            router, settings.chunk_size_chars, settings.chunk_overlap_chars
-        ),
+        knowledge=KnowledgeEngine(router, settings.chunk_size_chars, settings.chunk_overlap_chars),
         registry=registry,
         executor=ToolExecutor(registry, default_timeout=settings.tool_timeout_seconds),
     )

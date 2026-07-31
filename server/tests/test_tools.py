@@ -31,9 +31,7 @@ def _make_tool(name: str = "demo.add", *, requires_approval: bool = False) -> Fu
 
 
 def _ctx(tmp_path: Path) -> ToolContext:
-    return ToolContext(
-        workspace_id="w", session_id="s", run_id="r", sandbox_dir=tmp_path
-    )
+    return ToolContext(workspace_id="w", session_id="s", run_id="r", sandbox_dir=tmp_path)
 
 
 def _invocation(name: str, **arguments) -> ToolInvocation:
@@ -106,9 +104,7 @@ async def test_executor_raises_approval_gate(tmp_path):
     registry.register(_make_tool(requires_approval=True))
     executor = ToolExecutor(registry)
     with pytest.raises(ApprovalPending):
-        await executor.execute(
-            _invocation("demo.add", value=1), _ctx(tmp_path), grants=["demo.*"]
-        )
+        await executor.execute(_invocation("demo.add", value=1), _ctx(tmp_path), grants=["demo.*"])
     outcome = await executor.execute(
         _invocation("demo.add", value=1), _ctx(tmp_path), grants=["demo.*"], approved=True
     )
@@ -120,9 +116,7 @@ async def test_executor_force_approval_policy(tmp_path):
     registry.register(_make_tool())
     executor = ToolExecutor(registry, force_approval=frozenset({"demo.add"}))
     with pytest.raises(ApprovalPending):
-        await executor.execute(
-            _invocation("demo.add", value=1), _ctx(tmp_path), grants=["demo.*"]
-        )
+        await executor.execute(_invocation("demo.add", value=1), _ctx(tmp_path), grants=["demo.*"])
 
 
 async def test_executor_times_out(tmp_path):
@@ -161,9 +155,7 @@ async def test_executor_captures_tool_crash(tmp_path):
 
     registry = ToolRegistry()
     registry.register(
-        FunctionTool(
-            ToolSpec(name="demo.crash", description="", params_model=CrashArgs), crash
-        )
+        FunctionTool(ToolSpec(name="demo.crash", description="", params_model=CrashArgs), crash)
     )
     executor = ToolExecutor(registry)
     outcome = await executor.execute(_invocation("demo.crash"), _ctx(tmp_path), grants=["*"])

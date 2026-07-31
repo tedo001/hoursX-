@@ -63,17 +63,13 @@ class KnowledgeEngine:
         self._chunk_size = chunk_size
         self._overlap = overlap
 
-    async def ingest(
-        self, session: AsyncSession, *, document_id: str, text: str
-    ) -> int:
+    async def ingest(self, session: AsyncSession, *, document_id: str, text: str) -> int:
         """(Re)build a document's chunks; returns the chunk count. Idempotent —
         prior chunks are replaced, so re-ingesting a failed document is safe."""
         document = await session.get(Document, document_id)
         if document is None:
             raise ValueError(f"document {document_id} not found")
-        await session.execute(
-            delete(DocumentChunk).where(DocumentChunk.document_id == document_id)
-        )
+        await session.execute(delete(DocumentChunk).where(DocumentChunk.document_id == document_id))
         pieces = split_text(text, self._chunk_size, self._overlap)
         if pieces:
             embeddings = await self._router.embed(pieces)

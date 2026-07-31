@@ -99,14 +99,10 @@ async def test_full_chat_flow_via_api(api_client):
     run = await _wait_run(api_client, headers, submitted.json()["run_id"])
     assert run["final_answer"] == "echo: hi"
 
-    messages = (
-        await api_client.get(f"/v1/sessions/{session_id}/messages", headers=headers)
-    ).json()
+    messages = (await api_client.get(f"/v1/sessions/{session_id}/messages", headers=headers)).json()
     assert [m["role"] for m in messages] == ["user", "assistant"]
 
-    steps = (
-        await api_client.get(f"/v1/runs/{run['id']}/steps", headers=headers)
-    ).json()
+    steps = (await api_client.get(f"/v1/runs/{run['id']}/steps", headers=headers)).json()
     assert steps and steps[0]["kind"] == "model"
 
 
@@ -114,9 +110,7 @@ async def test_sse_stream_replays_terminal_state(api_client):
     token = await _register(api_client)
     headers = _auth(token)
     agent = (
-        await api_client.post(
-            "/v1/agents", headers=headers, json={"handle": "hx", "title": "H"}
-        )
+        await api_client.post("/v1/agents", headers=headers, json={"handle": "hx", "title": "H"})
     ).json()
     session = (
         await api_client.post(
@@ -130,9 +124,7 @@ async def test_sse_stream_replays_terminal_state(api_client):
     ).json()["run_id"]
     await _wait_run(api_client, headers, run_id)
 
-    async with api_client.stream(
-        "GET", f"/v1/runs/{run_id}/stream", headers=headers
-    ) as response:
+    async with api_client.stream("GET", f"/v1/runs/{run_id}/stream", headers=headers) as response:
         body = ""
         async for chunk in response.aiter_text():
             body += chunk
@@ -214,15 +206,11 @@ async def test_schedule_crud_and_validation(api_client):
     assert good.status_code == 201
     listed = (await api_client.get("/v1/schedules", headers=headers)).json()
     assert len(listed) == 1
-    deleted = await api_client.delete(
-        f"/v1/schedules/{good.json()['id']}", headers=headers
-    )
+    deleted = await api_client.delete(f"/v1/schedules/{good.json()['id']}", headers=headers)
     assert deleted.status_code == 204
 
 
 async def test_admin_tools_lists_builtins(api_client):
     token = await _register(api_client)
-    tools = (
-        await api_client.get("/v1/admin/tools", headers=_auth(token))
-    ).json()["tools"]
+    tools = (await api_client.get("/v1/admin/tools", headers=_auth(token))).json()["tools"]
     assert "fs.read" in tools and "shell.run" in tools and "agent.delegate" in tools

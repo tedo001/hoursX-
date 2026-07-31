@@ -72,9 +72,7 @@ class ContextBuilder:
             if section := self._bounded_section(header, items):
                 system_parts.append(section)
         if system_parts:
-            messages.append(
-                ChatMessage(role=ChatRole.SYSTEM, content="\n\n".join(system_parts))
-            )
+            messages.append(ChatMessage(role=ChatRole.SYSTEM, content="\n\n".join(system_parts)))
 
         fixed_cost = sum(estimate_tokens(m.content) for m in messages)
         remaining = self.token_budget - fixed_cost

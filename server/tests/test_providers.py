@@ -15,9 +15,7 @@ from hoursx.providers.types import (
 
 
 def _request(text: str) -> ChatRequest:
-    return ChatRequest(
-        model="unset", messages=[ChatMessage(role=ChatRole.USER, content=text)]
-    )
+    return ChatRequest(model="unset", messages=[ChatMessage(role=ChatRole.USER, content=text)])
 
 
 async def test_echo_completes_with_last_user_message():
@@ -104,8 +102,6 @@ async def test_router_raises_when_all_fail():
 
 
 async def test_hash_provider_embeds_via_router():
-    router = ModelRouter(
-        {"hash": _HashEmbedProvider()}, aliases={"embed": "hash/hash-embed-256"}
-    )
+    router = ModelRouter({"hash": _HashEmbedProvider()}, aliases={"embed": "hash/hash-embed-256"})
     [vec] = await router.embed(["some text"])
     assert len(vec) == 256

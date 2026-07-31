@@ -94,8 +94,6 @@ class ToolExecutor:
         except Exception:
             metrics.incr("tools.crashed")
             log.exception("tool %s crashed", name)
-            return ToolOutcome.failure(
-                f"'{name}' failed unexpectedly. Try a different approach."
-            )
+            return ToolOutcome.failure(f"'{name}' failed unexpectedly. Try a different approach.")
         metrics.incr("tools.ok" if outcome.ok else "tools.failed")
         return outcome

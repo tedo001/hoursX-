@@ -35,13 +35,17 @@ async def list_documents(
 ) -> list[DocumentOut]:
     async with services.db.session() as db:
         rows = (
-            await db.execute(
-                select(Document)
-                .where(Document.workspace_id == actor.workspace.id)
-                .order_by(Document.created_at.desc())
-                .limit(200)
+            (
+                await db.execute(
+                    select(Document)
+                    .where(Document.workspace_id == actor.workspace.id)
+                    .order_by(Document.created_at.desc())
+                    .limit(200)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return [_out(row) for row in rows]
 
 
@@ -54,9 +58,7 @@ async def upload_document(
     """Create the document and ingest it asynchronously; watch the
     ``document.ingested`` event or poll the document status."""
     async with services.db.session() as db:
-        document = Document(
-            workspace_id=actor.workspace.id, title=body.title, source=body.source
-        )
+        document = Document(workspace_id=actor.workspace.id, title=body.title, source=body.source)
         db.add(document)
         await db.flush()
         document_id = document.id

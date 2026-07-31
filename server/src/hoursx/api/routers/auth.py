@@ -52,24 +52,16 @@ async def register(
         )
         db.add(user)
         await db.flush()
-        workspace = Workspace(
-            name=f"{body.display_name}'s workspace", slug=f"ws-{user.id[:12]}"
-        )
+        workspace = Workspace(name=f"{body.display_name}'s workspace", slug=f"ws-{user.id[:12]}")
         db.add(workspace)
         await db.flush()
-        db.add(
-            WorkspaceMember(
-                workspace_id=workspace.id, user_id=user.id, role=Role.OWNER.value
-            )
-        )
+        db.add(WorkspaceMember(workspace_id=workspace.id, user_id=user.id, role=Role.OWNER.value))
         await db.flush()
         return _issue(services, user.id, workspace.id)
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(
-    body: LoginRequest, services: AppServices = Depends(get_services)
-) -> TokenResponse:
+async def login(body: LoginRequest, services: AppServices = Depends(get_services)) -> TokenResponse:
     async with services.db.session() as db:
         user = (
             await db.execute(select(User).where(User.email == body.email.lower()))
@@ -78,12 +70,16 @@ async def login(
             # One error for both cases: never reveal whether the email exists.
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid credentials")
         membership = (
-            await db.execute(
-                select(WorkspaceMember)
-                .where(WorkspaceMember.user_id == user.id)
-                .order_by(WorkspaceMember.created_at)
+            (
+                await db.execute(
+                    select(WorkspaceMember)
+                    .where(WorkspaceMember.user_id == user.id)
+                    .order_by(WorkspaceMember.created_at)
+                )
             )
-        ).scalars().first()
+            .scalars()
+            .first()
+        )
         if membership is None:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "no workspace membership")
         return _issue(services, user.id, membership.workspace_id)
@@ -91,6 +87,4 @@ async def login(
 
 @router.get("/me", response_model=UserOut)
 async def me(actor: Actor = Depends(get_actor)) -> UserOut:
-    return UserOut(
-        id=actor.user.id, email=actor.user.email, display_name=actor.user.display_name
-    )
+    return UserOut(id=actor.user.id, email=actor.user.email, display_name=actor.user.display_name)

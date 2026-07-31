@@ -44,9 +44,7 @@ class Planner:
             self._alias,
             ChatRequest(
                 model="unset",
-                messages=[
-                    ChatMessage(role=ChatRole.USER, content=_PLAN_PROMPT.format(goal=goal))
-                ],
+                messages=[ChatMessage(role=ChatRole.USER, content=_PLAN_PROMPT.format(goal=goal))],
                 temperature=0.2,
                 max_tokens=800,
             ),

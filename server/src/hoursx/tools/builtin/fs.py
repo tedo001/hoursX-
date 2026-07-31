@@ -56,9 +56,7 @@ async def _read(args: ReadArgs, ctx: ToolContext) -> ToolOutcome:
         return ToolOutcome.failure(f"{args.path} is a directory. Use fs.list instead.")
     window = text[args.offset : args.offset + _MAX_READ_CHARS]
     truncated = args.offset + len(window) < len(text)
-    note = (
-        f" (truncated; continue with offset={args.offset + len(window)})" if truncated else ""
-    )
+    note = f" (truncated; continue with offset={args.offset + len(window)})" if truncated else ""
     return ToolOutcome.success(
         f"Read {len(window)} chars from {args.path}{note}",
         content=window,
@@ -88,9 +86,7 @@ async def _list(args: ListArgs, ctx: ToolContext) -> ToolOutcome:
     entries = sorted(
         f"{entry.name}/" if entry.is_dir() else entry.name for entry in target.iterdir()
     )[:500]
-    return ToolOutcome.success(
-        f"{len(entries)} entries in {args.path}", entries=entries
-    )
+    return ToolOutcome.success(f"{len(entries)} entries in {args.path}", entries=entries)
 
 
 def register_fs_tools(registry: ToolRegistry) -> None:

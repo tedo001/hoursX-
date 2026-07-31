@@ -35,12 +35,16 @@ async def list_agents(
 ) -> list[AgentProfileOut]:
     async with services.db.session() as db:
         rows = (
-            await db.execute(
-                select(AgentProfile)
-                .where(AgentProfile.workspace_id == actor.workspace.id)
-                .order_by(AgentProfile.created_at)
+            (
+                await db.execute(
+                    select(AgentProfile)
+                    .where(AgentProfile.workspace_id == actor.workspace.id)
+                    .order_by(AgentProfile.created_at)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return [_out(row) for row in rows]
 
 

@@ -15,7 +15,6 @@ import pytest
 from hoursx.agents import AgentRuntime
 from hoursx.api import create_app
 from hoursx.config import HoursXSettings
-from hoursx.db.engine import Database
 from hoursx.db.models import AgentProfile, Session, User, Workspace, WorkspaceMember
 from hoursx.events import EventBus
 from hoursx.orchestration import Conductor

@@ -31,9 +31,7 @@ def _out(session: Session) -> SessionOut:
     )
 
 
-async def _owned_session(
-    services: AppServices, actor: Actor, session_id: str
-) -> Session:
+async def _owned_session(services: AppServices, actor: Actor, session_id: str) -> Session:
     async with services.db.session() as db:
         session = await db.get(Session, session_id)
         if session is None or session.workspace_id != actor.workspace.id:
@@ -48,16 +46,20 @@ async def list_sessions(
 ) -> list[SessionOut]:
     async with services.db.session() as db:
         rows = (
-            await db.execute(
-                select(Session)
-                .where(
-                    Session.workspace_id == actor.workspace.id,
-                    Session.archived.is_(False),
+            (
+                await db.execute(
+                    select(Session)
+                    .where(
+                        Session.workspace_id == actor.workspace.id,
+                        Session.archived.is_(False),
+                    )
+                    .order_by(Session.created_at.desc())
+                    .limit(100)
                 )
-                .order_by(Session.created_at.desc())
-                .limit(100)
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return [_out(row) for row in rows]
 
 
@@ -94,13 +96,17 @@ async def list_messages(
     await _owned_session(services, actor, session_id)
     async with services.db.session() as db:
         rows = (
-            await db.execute(
-                select(Message)
-                .where(Message.session_id == session_id)
-                .order_by(Message.created_at, Message.id)
-                .limit(500)
+            (
+                await db.execute(
+                    select(Message)
+                    .where(Message.session_id == session_id)
+                    .order_by(Message.created_at, Message.id)
+                    .limit(500)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return [
             MessageOut(
                 id=row.id,

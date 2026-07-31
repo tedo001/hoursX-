@@ -41,9 +41,7 @@ async def execute_run_job(ctx: dict, run_id: str) -> None:
 
 
 async def resume_run_job(ctx: dict, run_id: str, approval_id: str, approved: bool) -> None:
-    await ctx["conductor"].runtime.resume_run(
-        run_id, approval_id=approval_id, approved=approved
-    )
+    await ctx["conductor"].runtime.resume_run(run_id, approval_id=approval_id, approved=approved)
 
 
 async def ingest_document_job(ctx: dict, document_id: str, text: str) -> None:

@@ -61,16 +61,16 @@ async def get_run_steps(
     await _owned_run(services, actor, run_id)
     async with services.db.session() as db:
         rows = (
-            await db.execute(
-                select(RunStep)
-                .where(RunStep.run_id == run_id)
-                .order_by(RunStep.index)
+            (
+                await db.execute(
+                    select(RunStep).where(RunStep.run_id == run_id).order_by(RunStep.index)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return [
-            RunStepOut(
-                index=row.index, kind=row.kind, detail=row.detail, created_at=row.created_at
-            )
+            RunStepOut(index=row.index, kind=row.kind, detail=row.detail, created_at=row.created_at)
             for row in rows
         ]
 
@@ -125,15 +125,19 @@ async def list_pending_approvals(
 ) -> list[ApprovalOut]:
     async with services.db.session() as db:
         rows = (
-            await db.execute(
-                select(ApprovalRequest)
-                .where(
-                    ApprovalRequest.workspace_id == actor.workspace.id,
-                    ApprovalRequest.status == "pending",
+            (
+                await db.execute(
+                    select(ApprovalRequest)
+                    .where(
+                        ApprovalRequest.workspace_id == actor.workspace.id,
+                        ApprovalRequest.status == "pending",
+                    )
+                    .order_by(ApprovalRequest.created_at)
                 )
-                .order_by(ApprovalRequest.created_at)
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return [
             ApprovalOut(
                 id=row.id,

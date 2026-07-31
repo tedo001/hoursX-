@@ -63,11 +63,7 @@ async def fire_due_schedules(services: AppServices, conductor, now: datetime | N
     # (schedule_id, workspace_id, session_id, user_id, goal)
 
     async with services.db.session() as db:
-        due = (
-            (await db.execute(select(Schedule).where(Schedule.enabled.is_(True))))
-            .scalars()
-            .all()
-        )
+        due = (await db.execute(select(Schedule).where(Schedule.enabled.is_(True)))).scalars().all()
         for schedule in due:
             try:
                 if not cron_matches(schedule.cron, now):
