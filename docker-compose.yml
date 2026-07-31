@@ -1,0 +1,85 @@
+# Full HoursX stack: database, queue, API, worker, console.
+#   docker compose up --build
+# Then open http://localhost:3400 and register the first account.
+
+name: hoursx
+
+x-server-env: &server-env
+  HOURSX_DATABASE_URL: postgresql+asyncpg://hoursx:hoursx@postgres:5432/hoursx
+  HOURSX_REDIS_URL: redis://redis:6379/0
+  HOURSX_TASK_BACKEND: arq
+  HOURSX_JWT_SECRET: ${HOURSX_JWT_SECRET:-dev-only-insecure-secret-change-me}
+  HOURSX_ANTHROPIC_API_KEY: ${HOURSX_ANTHROPIC_API_KEY:-}
+  HOURSX_OPENAI_API_KEY: ${HOURSX_OPENAI_API_KEY:-}
+  HOURSX_LOCAL_BASE_URL: ${HOURSX_LOCAL_BASE_URL:-}
+  HOURSX_LOG_LEVEL: INFO
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: hoursx
+      POSTGRES_PASSWORD: hoursx
+      POSTGRES_DB: hoursx
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hoursx"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/docker/server.Dockerfile
+    environment: *server-env
+    command: ["hoursx", "serve"]
+    ports:
+      - "8400:8400"
+    volumes:
+      - agent-workspaces:/app/workspaces
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: deploy/docker/server.Dockerfile
+    environment: *server-env
+    command: ["hoursx", "worker"]
+    volumes:
+      - agent-workspaces:/app/workspaces
+    depends_on:
+      api:
+        condition: service_started
+
+  console:
+    build:
+      context: .
+      dockerfile: deploy/docker/console.Dockerfile
+      args:
+        NEXT_PUBLIC_HOURSX_API_URL: ${HOURSX_PUBLIC_API_URL:-http://localhost:8400}
+    ports:
+      - "3400:3400"
+    depends_on:
+      - api
+
+volumes:
+  postgres-data:
+  redis-data:
+  agent-workspaces:

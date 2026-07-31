@@ -1,0 +1,148 @@
+<div align="center">
+  <img src="console/public/logo.svg" alt="HoursX" width="72" height="72" />
+  <h1>HoursX</h1>
+  <p><strong>An autonomous AI agent platform.</strong> Goal-driven agents with tools, memory, and knowledge retrieval — plus the console to operate them.</p>
+</div>
+
+---
+
+HoursX runs agents that pursue goals rather than answer single prompts. An agent
+receives a goal, plans, calls tools, reads and writes memory, retrieves from a
+knowledge base, delegates to other agents, and pauses for human approval when it
+reaches something irreversible. Everything is observable while it happens and
+durable afterwards.
+
+## Highlights
+
+| Capability | What it means |
+| --- | --- |
+| **Autonomous run loop** | Model ⇄ tool iteration with step budgets, streamed output, and a recorded outcome for every run |
+| **Human approval gates** | Flagged tool calls suspend the run, checkpoint the transcript, and resume on a human decision |
+| **Multi-agent collaboration** | Agents delegate self-contained sub-tasks to other agents and receive their answers |
+| **Three-tier memory** | Per-run scratchpad, replayed conversation history, and embedding-indexed long-term notes |
+| **Knowledge retrieval** | Document ingestion with hybrid vector + keyword search, available to agents as a tool |
+| **Tool sandbox** | Filesystem, shell, git, code editing, HTTP, and browser tools confined to a per-session workspace |
+| **Provider-agnostic models** | Anthropic, OpenAI, and any OpenAI-compatible local server, addressed by intent (`fast` / `deep`) with fallback chains |
+| **Plugin SDK** | Third-party tools via entry points or a local directory, gated by operator-granted permissions |
+| **Multi-user + RBAC** | Workspaces, four roles, JWT and API-key auth, per-route permission checks |
+| **Real-time + durable** | WebSocket and SSE event streams; PostgreSQL as the system of record |
+
+## Quick start
+
+### Docker Compose (full stack)
+
+```bash
+git clone <your-fork-url> hoursx && cd hoursx
+cp .env.example .env          # set HOURSX_JWT_SECRET and at least one model key
+docker compose up --build
+```
+
+Open **http://localhost:3400**, register the first account, create an agent, and
+start a session. With no model API key configured, the deterministic `echo`
+provider still exercises the full loop end to end.
+
+### Local development
+
+```bash
+# Backend (http://localhost:8400, OpenAPI docs at /docs)
+cd server
+pip install -e ".[dev]"
+hoursx db-init
+hoursx serve
+
+# Console (http://localhost:3400)
+cd console
+npm install
+npm run dev
+```
+
+The defaults need no external services: SQLite for storage, inline execution
+instead of a queue, and deterministic local embeddings. Point
+`HOURSX_DATABASE_URL` at PostgreSQL and set `HOURSX_TASK_BACKEND=arq` when you
+want the production shape.
+
+### Connect real models
+
+```bash
+export HOURSX_ANTHROPIC_API_KEY=sk-ant-...
+export HOURSX_MODEL_ALIASES='{"fast":"anthropic/claude-haiku-4-5","deep":"anthropic/claude-sonnet-5","embed":"openai/text-embedding-3-small"}'
+```
+
+Agents reference aliases (`deep`, `fast`), never vendor strings — swapping
+providers is a configuration change, not a code change. For local inference,
+set `HOURSX_LOCAL_BASE_URL` to any OpenAI-compatible endpoint (Ollama, vLLM,
+LM Studio) and use `local/<model>` refs.
+
+## How a run works
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant API as API Gateway
+    participant Cond as Conductor
+    participant RT as Agent Runtime
+    participant Exec as Tool Executor
+    User->>API: POST /v1/sessions/{id}/messages
+    API->>Cond: submit(goal)
+    Cond-->>User: 202 { run_id }
+    Cond->>RT: execute(run)
+    loop until answer or step limit
+        RT->>RT: model turn (streamed as run.delta events)
+        alt tool calls
+            RT->>Exec: invoke
+            Exec-->>RT: outcome
+            opt approval required
+                Exec--)RT: pause + checkpoint
+                RT--)User: run.awaiting_approval
+                User->>API: approve / deny
+                API->>RT: resume
+            end
+        else final answer
+            RT--)User: run.finished
+        end
+    end
+```
+
+## Repository layout
+
+```
+server/           FastAPI backend
+  src/hoursx/
+    agents.py         run loop (model ⇄ tools, approvals, delegation)
+    orchestration.py  conductor: run creation and dispatch
+    planning.py       goal → step plan
+    memory.py         working / episodic / semantic memory
+    knowledge.py      chunking, embedding, hybrid retrieval
+    tools/            registry, policy executor, built-in tools
+    providers/        model adapters + alias router
+    api/              routers, dependencies, schemas
+    sdk/              plugin manifest, discovery, marketplace
+    db/               SQLAlchemy models and engine
+  tests/            97 unit + integration tests
+console/          Next.js operator console (TypeScript, Tailwind)
+deploy/           Dockerfiles and Kubernetes manifests
+docs/             architecture, API, security, plugin guide
+```
+
+## Documentation
+
+- [Architecture](docs/architecture.md) — modules, contracts, and design decisions
+- [API reference](docs/api.md) — endpoints, auth, events, and error shapes
+- [Security model](docs/security.md) — sandboxing, RBAC, approvals, secrets
+- [Plugin guide](docs/plugins.md) — build and publish a tool plugin
+- [Operations](docs/operations.md) — deployment, scaling, and troubleshooting
+
+## Testing
+
+```bash
+cd server && pytest -q          # 97 tests, no network or external services
+cd console && npm run typecheck && npm run build
+```
+
+The suite runs against SQLite and a scriptable deterministic model provider, so
+the full run loop — including tool dispatch, approval pause/resume, and
+delegation — is exercised hermetically in CI.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
