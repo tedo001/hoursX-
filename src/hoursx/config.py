@@ -61,6 +61,12 @@ class HoursXSettings(BaseSettings):
     breaker_failure_threshold: int = 5
     breaker_recovery_seconds: float = 30.0
 
+    # --- host/kernel operations (deliberately opt-in) ---
+    # Deep system access is a capability an operator grants, never a default.
+    system_ops_enabled: bool = False
+    system_mutations_enabled: bool = False
+    system_sysctl_allowlist: list[str] = Field(default_factory=list)
+
     # --- quotas (0 disables the limit) ---
     max_concurrent_runs_per_workspace: int = 8
     max_runs_per_hour_per_workspace: int = 240

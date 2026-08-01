@@ -41,7 +41,7 @@ dev = [
 ]
 
 [project.scripts]
-hoursx = "hoursx.cli:main"
+hoursx = "hoursx.cli.main:main"
 
 [project.urls]
 Documentation = "https://github.com/tedo001/hoursX-/tree/main/docs"

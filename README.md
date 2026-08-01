@@ -30,6 +30,8 @@ durable afterwards.
 | **Fault tolerance** | Per-provider retry with jittered backoff, circuit breakers, and fallback chains |
 | **Governed by quotas** | Per-workspace concurrency and hourly limits, enforced in the database across replicas |
 | **Auditable** | Append-only trail of membership, credential, approval, and agent changes |
+| **Three front ends** | Web console, full CLI, and a stdlib desktop GUI — all driving one runtime |
+| **Kernel-aware** | Reads `/proc`, `/sys`, the ring buffer, modules, sysctl, cgroups, and namespaces; approved, reversible host changes |
 
 ## Quick start
 
@@ -44,6 +46,20 @@ docker compose up --build
 Open **http://localhost:3400**, register the first account, create an agent, and
 start a session. With no model API key configured, the deterministic `echo`
 provider still exercises the full loop end to end.
+
+### Command line (no server required)
+
+```bash
+pip install -e .
+hoursx agent run "why is disk usage climbing on this host?"
+hoursx system probe -v
+hoursx chat            # interactive session
+hoursx gui             # desktop application
+hoursx doctor          # diagnose this deployment
+```
+
+Agent commands run the runtime **in-process** against SQLite, so an operator can
+drive an agent on a host with nothing else provisioned.
 
 ### Local development
 
@@ -122,12 +138,15 @@ src/hoursx/         FastAPI backend
   pagination.py       keyset cursors
   audit.py            append-only trail of consequential actions
   errors.py           domain error taxonomy → HTTP mapping
+  cli/                command-line module (engine, commands, rendering)
+  gui/                desktop application (Tkinter; stdlib only)
+  system/             kernel introspection, host ops, privilege envelope
   tools/              registry, policy executor, built-in tools
   providers/          model adapters + alias router
   api/                routers, dependencies, schemas
   sdk/                plugin manifest, discovery, marketplace
   db/                 SQLAlchemy models and engine
-tests/              250 unit + integration tests
+tests/              385 unit + integration tests
 console/            Next.js operator console (TypeScript, Tailwind)
 Dockerfile          server image (API + worker roles)
 deploy/             console image and Kubernetes manifests
@@ -141,11 +160,12 @@ docs/               architecture, API, security, plugin guide, operations
 - [Security model](docs/security.md) — sandboxing, RBAC, approvals, secrets
 - [Plugin guide](docs/plugins.md) — build and publish a tool plugin
 - [Operations](docs/operations.md) — deployment, scaling, and troubleshooting
+- [System operations](docs/system-operations.md) — kernel access and the privilege envelope
 
 ## Testing
 
 ```bash
-pytest -q          # 250 tests, no network or external services
+pytest -q          # 385 tests, no network or external services
 cd console && npm run typecheck && npm run build
 ```
 
