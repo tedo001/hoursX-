@@ -116,6 +116,23 @@ def _add_system_commands(subparsers: argparse._SubParsersAction) -> None:
     kernel_log.set_defaults(fn=commands.cmd_system_kernel_log)
 
 
+def _add_change_commands(subparsers: argparse._SubParsersAction) -> None:
+    changes = subparsers.add_parser("changes", help="host changes made by agents")
+    changes_sub = changes.add_subparsers(dest="changes_command", required=True)
+
+    listing = changes_sub.add_parser("list", help="recorded changes and their state")
+    listing.add_argument("--limit", type=int, default=25)
+    listing.set_defaults(fn=commands.cmd_changes_list)
+
+    revert = changes_sub.add_parser("revert", help="undo a recorded change")
+    revert.add_argument("change_id", help="change id or unique prefix")
+    revert.set_defaults(fn=commands.cmd_changes_revert)
+
+    confirm = changes_sub.add_parser("confirm", help="keep a change past its revert timer")
+    confirm.add_argument("change_id", help="change id or unique prefix")
+    confirm.set_defaults(fn=commands.cmd_changes_confirm)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="hoursx",
@@ -127,6 +144,7 @@ def build_parser() -> argparse.ArgumentParser:
             "  hoursx chat\n"
             "  hoursx system probe -v\n"
             "  hoursx approvals list\n"
+            "  hoursx changes list\n"
             "  hoursx doctor\n"
             "  hoursx gui\n"
         ),
@@ -140,6 +158,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_approval_commands(subparsers)
     _add_knowledge_commands(subparsers)
     _add_system_commands(subparsers)
+    _add_change_commands(subparsers)
 
     chat = subparsers.add_parser("chat", help="interactive agent session")
     chat.add_argument("--agent", default="operator")

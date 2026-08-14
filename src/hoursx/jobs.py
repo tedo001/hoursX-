@@ -58,6 +58,14 @@ async def recover_orphaned_runs_job(ctx: dict) -> None:
         await enqueue_job(ctx["services"].settings, "execute_run_job", run_id)
 
 
+async def revert_expired_changes_job(ctx: dict) -> None:
+    from hoursx.remediation.ledger import revert_expired_changes
+
+    reverted = await revert_expired_changes(ctx["services"])
+    if reverted:
+        log.warning("reverted %d unconfirmed host changes", len(reverted))
+
+
 async def fire_schedules_job(ctx: dict) -> None:
     from hoursx.scheduler import fire_due_schedules
 
@@ -103,9 +111,12 @@ def worker_settings_class() -> type:
             resume_run_job,
             ingest_document_job,
             recover_orphaned_runs_job,
+            revert_expired_changes_job,
         ]
         cron_jobs = [
             cron(fire_schedules_job, minute=set(range(60))),
+            # Dead-man sweep: unconfirmed changes must not outlive their window.
+            cron(revert_expired_changes_job, minute=set(range(60))),
             # Sweep for runs abandoned by crashed workers every 5 minutes.
             cron(recover_orphaned_runs_job, minute={0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55}),
         ]

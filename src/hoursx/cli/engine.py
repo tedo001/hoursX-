@@ -34,6 +34,7 @@ DEFAULT_AGENT_GRANTS = [
     "knowledge.*",
     "memory.*",
     "system.*",
+    "change.*",
 ]
 
 

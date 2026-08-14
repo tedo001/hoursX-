@@ -397,6 +397,81 @@ async def cmd_knowledge_search(args: argparse.Namespace) -> int:
         await close_local(context)
 
 
+# ------------------------------------------------------------------- changes
+
+
+async def cmd_changes_list(args: argparse.Namespace) -> int:
+    """Show host changes an agent made, and whether they still stand."""
+    from hoursx.remediation.ledger import list_changes
+
+    context = await open_local()
+    try:
+        async with context.services.db.session() as db:
+            records = await list_changes(db, workspace_id=context.workspace_id, limit=args.limit)
+        rows = [
+            {
+                "id": record.id[:12],
+                "status": record.status,
+                "target": record.target,
+                "from": record.previous_value or "-",
+                "to": record.new_value,
+                "detail": record.detail,
+            }
+            for record in records
+        ]
+        _emit(render.table(rows, ["id", "status", "target", "from", "to", "detail"]))
+        return 0
+    finally:
+        await close_local(context)
+
+
+async def _change_action(args: argparse.Namespace, action: str) -> int:
+    from hoursx.remediation.guard import confirm_change
+    from hoursx.remediation.ledger import list_changes, load_change, revert_change
+    from hoursx.system.privileges import SystemPolicy
+
+    context = await open_local()
+    try:
+        async with context.services.db.session() as db:
+            records = await list_changes(db, workspace_id=context.workspace_id, limit=200)
+        match = next((r for r in records if r.id.startswith(args.change_id)), None)
+        if match is None:
+            _emit(render.paint(f"no change matching {args.change_id!r}", "red"))
+            return 1
+
+        if action == "confirm":
+            outcome = await confirm_change(
+                context.services,
+                change_id=match.id,
+                workspace_id=context.workspace_id,
+                confirmed_by="cli",
+            )
+        else:
+            settings = context.services.settings
+            policy = SystemPolicy(
+                enabled=settings.system_ops_enabled,
+                allow_mutations=settings.system_mutations_enabled,
+                extra_sysctl_allowlist=frozenset(settings.system_sysctl_allowlist),
+            )
+            async with context.services.db.session() as db:
+                record = await load_change(
+                    db, change_id=match.id, workspace_id=context.workspace_id
+                )
+                outcome = await revert_change(db, policy, record, reason="reverted from CLI;")
+        _emit(render.paint(outcome.summary, "green" if outcome.ok else "red"))
+        return 0 if outcome.ok else 1
+    finally:
+        await close_local(context)
+
+
+async def cmd_changes_revert(args: argparse.Namespace) -> int:
+    return await _change_action(args, "revert")
+
+
+async def cmd_changes_confirm(args: argparse.Namespace) -> int:
+    return await _change_action(args, "confirm")
+
+
 # -------------------------------------------------------------------- system
 
 

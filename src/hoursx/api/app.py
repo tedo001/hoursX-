@@ -13,6 +13,7 @@ from hoursx.api.routers import (
     admin,
     agents,
     auth,
+    changes,
     keys,
     knowledge,
     members,
@@ -83,6 +84,7 @@ def create_app(services: AppServices | None = None) -> FastAPI:
 
     app.include_router(auth.router)
     app.include_router(agents.router)
+    app.include_router(changes.router)
     app.include_router(keys.router)
     app.include_router(members.router)
     app.include_router(sessions.router)

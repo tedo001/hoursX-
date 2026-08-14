@@ -125,6 +125,14 @@ stands between a model's suggestion and your kernel. Treat
 configuration HoursX supports, and pair it with the audit log
 (`GET /v1/admin/audit`), which records every approval decision and who made it.
 
+## Verified changes
+
+Prefer `change.sysctl` and `change.service` over the bare `system.*` mutations
+wherever the agent can state what the change should achieve. Those tools apply
+the same privilege checks, then hold the change to its declared post-conditions
+and revert it automatically if they do not hold. See
+[guarded change](guarded-change.md).
+
 ## Using it
 
 From the terminal, without a server:

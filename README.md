@@ -31,6 +31,7 @@ durable afterwards.
 | **Governed by quotas** | Per-workspace concurrency and hourly limits, enforced in the database across replicas |
 | **Auditable** | Append-only trail of membership, credential, approval, and agent changes |
 | **Three front ends** | Web console, full CLI, and a stdlib desktop GUI — all driving one runtime |
+| **Self-verifying changes** | An agent declares what a change should achieve; changes that miss revert themselves, with a dead-man timer for anything that could sever access |
 | **Kernel-aware** | Reads `/proc`, `/sys`, the ring buffer, modules, sysctl, cgroups, and namespaces; approved, reversible host changes |
 
 ## Quick start
@@ -140,13 +141,14 @@ src/hoursx/         FastAPI backend
   errors.py           domain error taxonomy → HTTP mapping
   cli/                command-line module (engine, commands, rendering)
   gui/                desktop application (Tkinter; stdlib only)
+  remediation/        guarded change: post-conditions, ledger, auto-revert
   system/             kernel introspection, host ops, privilege envelope
   tools/              registry, policy executor, built-in tools
   providers/          model adapters + alias router
   api/                routers, dependencies, schemas
   sdk/                plugin manifest, discovery, marketplace
   db/                 SQLAlchemy models and engine
-tests/              385 unit + integration tests
+tests/              467 unit + integration tests
 console/            Next.js operator console (TypeScript, Tailwind)
 Dockerfile          server image (API + worker roles)
 deploy/             console image and Kubernetes manifests
@@ -161,11 +163,12 @@ docs/               architecture, API, security, plugin guide, operations
 - [Plugin guide](docs/plugins.md) — build and publish a tool plugin
 - [Operations](docs/operations.md) — deployment, scaling, and troubleshooting
 - [System operations](docs/system-operations.md) — kernel access and the privilege envelope
+- [Guarded change](docs/guarded-change.md) — post-conditions, auto-revert, and the dead-man switch
 
 ## Testing
 
 ```bash
-pytest -q          # 385 tests, no network or external services
+pytest -q          # 467 tests, no network or external services
 cd console && npm run typecheck && npm run build
 ```
 

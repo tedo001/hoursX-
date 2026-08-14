@@ -230,6 +230,33 @@ class Schedule(_Stamped, Base):
 # --------------------------------------------------------------------------- plugins
 
 
+class ChangeRecord(_Stamped, Base):
+    """A host mutation, with everything needed to undo it.
+
+    Recorded before the outcome is known, so a change is never applied without
+    a stored path back. ``previous_value`` is the exact prior state, captured
+    at apply time rather than reconstructed later.
+    """
+
+    __tablename__ = "change_records"
+
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
+    run_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    kind: Mapped[str] = mapped_column(String(32))  # sysctl | service
+    target: Mapped[str] = mapped_column(String(200))  # sysctl key or unit name
+    previous_value: Mapped[str | None] = mapped_column(Text, nullable=True)
+    new_value: Mapped[str] = mapped_column(Text, default="")
+    revertible: Mapped[bool] = mapped_column(Boolean, default=True)
+    status: Mapped[str] = mapped_column(String(24), default="applied", index=True)
+    # applied | verified | reverted | revert_failed | confirmed | unrevertible
+    conditions: Mapped[list] = mapped_column(JSON, default=list)
+    verification: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    detail: Mapped[str] = mapped_column(Text, default="")
+    # Dead-man switch: revert unless a human confirms before this instant.
+    expires_at: Mapped[datetime | None] = mapped_column(nullable=True, index=True)
+    settled_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+
 class AuditEvent(_Stamped, Base):
     """Append-only record of consequential actions.
 
