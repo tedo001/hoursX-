@@ -36,6 +36,8 @@ def _policy(ctx: ToolContext) -> SystemPolicy:
         enabled=settings.system_ops_enabled,
         allow_mutations=settings.system_mutations_enabled,
         extra_sysctl_allowlist=frozenset(settings.system_sysctl_allowlist),
+        backend=settings.system_backend,
+        sysd_socket=settings.sysd_socket,
     )
 
 

@@ -193,6 +193,8 @@ async def revert_expired_changes(services, policy: SystemPolicy | None = None) -
     policy = policy or SystemPolicy(
         enabled=services.settings.system_ops_enabled,
         allow_mutations=services.settings.system_mutations_enabled,
+        backend=services.settings.system_backend,
+        sysd_socket=services.settings.sysd_socket,
     )
     reverted: list[str] = []
     now = utcnow()

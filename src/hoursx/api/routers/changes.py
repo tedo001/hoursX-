@@ -45,6 +45,8 @@ def _policy(services: AppServices) -> SystemPolicy:
         enabled=services.settings.system_ops_enabled,
         allow_mutations=services.settings.system_mutations_enabled,
         extra_sysctl_allowlist=frozenset(services.settings.system_sysctl_allowlist),
+        backend=services.settings.system_backend,
+        sysd_socket=services.settings.sysd_socket,
     )
 
 

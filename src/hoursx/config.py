@@ -45,6 +45,7 @@ class HoursXSettings(BaseSettings):
     # --- models ---
     anthropic_api_key: str | None = Field(default=None, repr=False)
     openai_api_key: str | None = Field(default=None, repr=False)
+    gemini_api_key: str | None = Field(default=None, repr=False)
     openai_base_url: str = "https://api.openai.com/v1"
     local_base_url: str | None = None  # OpenAI-compatible local endpoint (Ollama, vLLM)
     model_aliases: dict[str, str] = Field(
@@ -64,6 +65,10 @@ class HoursXSettings(BaseSettings):
     # --- host/kernel operations (deliberately opt-in) ---
     # Deep system access is a capability an operator grants, never a default.
     system_ops_enabled: bool = False
+    # "direct" performs privileged operations in this process; "helper" delegates
+    # them to hoursx-sysd so the agent itself needs no capabilities.
+    system_backend: Literal["direct", "helper"] = "direct"
+    sysd_socket: str = "/run/hoursx/sysd.sock"
     system_mutations_enabled: bool = False
     system_sysctl_allowlist: list[str] = Field(default_factory=list)
 

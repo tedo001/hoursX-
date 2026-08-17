@@ -35,6 +35,20 @@ class OpResult:
     detail: dict[str, Any]
 
 
+def _helper_for(policy: SystemPolicy):
+    """Return a helper client when the operator selected that backend.
+
+    Policy is still evaluated here first. The helper checks again on its own
+    authority, so the two are independent rather than layered — neither relies
+    on the other having done its job.
+    """
+    if policy.backend != "helper":
+        return None
+    from hoursx.system.helper import HelperClient
+
+    return HelperClient(policy.sysd_socket)
+
+
 async def write_sysctl(policy: SystemPolicy, key: str, value: str) -> OpResult:
     """Set a kernel parameter, recording its previous value for rollback."""
     policy.check_enabled(f"sysctl write {key}")
@@ -43,6 +57,10 @@ async def write_sysctl(policy: SystemPolicy, key: str, value: str) -> OpResult:
     classification, reason = policy.classify_sysctl_write(key)
     if classification is OperationClass.REFUSED:
         raise UnsafeOperationError(f"sysctl write {key}", reason)
+
+    helper = _helper_for(policy)
+    if helper is not None:
+        return await helper.sysctl_set(key, value)
 
     previous = read_sysctl(key)
     try:
@@ -83,6 +101,10 @@ async def send_signal(policy: SystemPolicy, pid: int, signal_number: int) -> OpR
     if classification is OperationClass.REFUSED:
         raise UnsafeOperationError(f"signal pid {pid}", reason)
 
+    helper = _helper_for(policy)
+    if helper is not None:
+        return await helper.send_signal(pid, signal_number)
+
     try:
         os.kill(pid, signal_number)
     except ProcessLookupError:
@@ -102,6 +124,10 @@ async def manage_service(policy: SystemPolicy, unit: str, action: str) -> OpResu
         raise UnsafeOperationError(f"service {action} {unit}", reason)
     if classification is OperationClass.MUTATE:
         policy.require_mutations_allowed(f"service {action} {unit}")
+
+    helper = _helper_for(policy)
+    if helper is not None:
+        return await helper.service(unit, action)
 
     process = await asyncio.create_subprocess_exec(
         "systemctl",

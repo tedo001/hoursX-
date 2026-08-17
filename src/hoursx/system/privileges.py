@@ -224,6 +224,9 @@ class SystemPolicy:
     enabled: bool = False
     allow_mutations: bool = False
     extra_sysctl_allowlist: frozenset[str] = field(default_factory=frozenset)
+    # "direct" or "helper"; see hoursx.system.helper for why the latter exists.
+    backend: str = "direct"
+    sysd_socket: str = "/run/hoursx/sysd.sock"
 
     def check_enabled(self, operation: str) -> None:
         if not self.enabled:
