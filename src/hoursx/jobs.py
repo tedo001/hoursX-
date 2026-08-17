@@ -66,6 +66,23 @@ async def revert_expired_changes_job(ctx: dict) -> None:
         log.warning("reverted %d unconfirmed host changes", len(reverted))
 
 
+async def dispatch_channel_replies_job(ctx: dict) -> None:
+    """Safety net for the API-side dispatch loop.
+
+    The API process normally settles replies within seconds. This exists for the
+    case where the replica holding that loop died with obligations outstanding:
+    a late answer is recoverable, a lost one is not.
+    """
+    from hoursx.channels.dispatch import ChannelDispatcher
+
+    services = ctx["services"]
+    if not len(services.channels):
+        return
+    sent = await ChannelDispatcher(services, services.channels).sweep_once()
+    if sent:
+        log.info("dispatched %d channel replies", sent)
+
+
 async def fire_schedules_job(ctx: dict) -> None:
     from hoursx.scheduler import fire_due_schedules
 
@@ -112,9 +129,11 @@ def worker_settings_class() -> type:
             ingest_document_job,
             recover_orphaned_runs_job,
             revert_expired_changes_job,
+            dispatch_channel_replies_job,
         ]
         cron_jobs = [
             cron(fire_schedules_job, minute=set(range(60))),
+            cron(dispatch_channel_replies_job, minute=set(range(60))),
             # Dead-man sweep: unconfirmed changes must not outlive their window.
             cron(revert_expired_changes_job, minute=set(range(60))),
             # Sweep for runs abandoned by crashed workers every 5 minutes.

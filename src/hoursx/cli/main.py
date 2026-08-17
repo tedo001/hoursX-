@@ -133,6 +133,24 @@ def _add_change_commands(subparsers: argparse._SubParsersAction) -> None:
     confirm.set_defaults(fn=commands.cmd_changes_confirm)
 
 
+def _add_channel_commands(subparsers: argparse._SubParsersAction) -> None:
+    channels = subparsers.add_parser("channels", help="messaging channels and their conversations")
+    channels_sub = channels.add_subparsers(dest="channels_command", required=True)
+
+    listing = channels_sub.add_parser("list", help="configured channels, bindings, owed replies")
+    listing.add_argument("--limit", type=int, default=25)
+    listing.set_defaults(fn=commands.cmd_channels_list)
+
+    register = channels_sub.add_parser("register", help="point Telegram at this deployment")
+    register.add_argument(
+        "--url", default="", help="public base URL (defaults to HOURSX_PUBLIC_URL)"
+    )
+    register.set_defaults(fn=commands.cmd_channels_register)
+
+    dispatch = channels_sub.add_parser("dispatch", help="settle replies still owed, once")
+    dispatch.set_defaults(fn=commands.cmd_channels_dispatch)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="hoursx",
@@ -145,6 +163,7 @@ def build_parser() -> argparse.ArgumentParser:
             "  hoursx system probe -v\n"
             "  hoursx approvals list\n"
             "  hoursx changes list\n"
+            "  hoursx channels list\n"
             "  hoursx doctor\n"
             "  hoursx gui\n"
         ),
@@ -159,6 +178,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_knowledge_commands(subparsers)
     _add_system_commands(subparsers)
     _add_change_commands(subparsers)
+    _add_channel_commands(subparsers)
 
     chat = subparsers.add_parser("chat", help="interactive agent session")
     chat.add_argument("--agent", default="operator")

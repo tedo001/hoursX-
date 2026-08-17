@@ -227,6 +227,81 @@ class Schedule(_Stamped, Base):
     last_fired_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
 
+# --------------------------------------------------------------------------- channels
+
+
+class ChannelBinding(_Stamped, Base):
+    """Ties an external conversation to a HoursX session.
+
+    The binding is what makes a chat with an agent continuous: the same Telegram
+    thread reaches the same session, and therefore the same history and memory,
+    across restarts and across replicas. Without it every inbound message would
+    start a stranger.
+    """
+
+    __tablename__ = "channel_bindings"
+    __table_args__ = (UniqueConstraint("workspace_id", "routing_key"),)
+
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
+    channel: Mapped[str] = mapped_column(String(24))  # telegram | whatsapp | gmail | ...
+    # "<channel>:<conversation_id>" — opaque above the adapter layer.
+    routing_key: Mapped[str] = mapped_column(String(200), index=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("sessions.id"), index=True)
+    sender_id: Mapped[str] = mapped_column(String(120), default="")
+    sender_display: Mapped[str] = mapped_column(String(200), default="")
+
+
+class ChannelCursor(_Stamped, Base):
+    """How far a pull-style channel has consumed.
+
+    Gmail notifies that a mailbox changed rather than delivering the message, so
+    the change has to be fetched relative to a remembered position. Chat channels
+    push the message itself and need no cursor.
+    """
+
+    __tablename__ = "channel_cursors"
+    __table_args__ = (UniqueConstraint("workspace_id", "channel"),)
+
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
+    channel: Mapped[str] = mapped_column(String(24))
+    position: Mapped[str] = mapped_column(String(120), default="")
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
+class ChannelReply(_Stamped, Base):
+    """A reply owed to an inbound conversation.
+
+    Recorded when the message is accepted, not when the run finishes: accepting
+    a message creates an obligation to answer it, and that obligation has to
+    outlive the process that took it. The dispatcher settles these rows, so a
+    crash between "run finished" and "reply sent" delays the answer instead of
+    losing it.
+
+    Unique on ``run_id`` because a redelivered webhook resolves to the same run
+    through the idempotency key, and must not owe a second reply.
+    """
+
+    __tablename__ = "channel_replies"
+    __table_args__ = (UniqueConstraint("run_id"),)
+
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"), index=True)
+    channel: Mapped[str] = mapped_column(String(24))
+    conversation_id: Mapped[str] = mapped_column(String(200))
+    subject: Mapped[str] = mapped_column(String(400), default="")
+    reply_to: Mapped[str] = mapped_column(String(400), default="")
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    # pending | sent | abandoned
+    # Claiming bumps this, so it doubles as the compare-and-swap token; there is
+    # no separate "sending" state to get stuck in when a dispatcher dies.
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    # A run parked on human approval gets one interim note so the person is not
+    # left in silence; the row stays pending until the real answer exists.
+    interim_sent: Mapped[bool] = mapped_column(Boolean, default=False)
+    detail: Mapped[str] = mapped_column(Text, default="")
+    sent_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+
 # --------------------------------------------------------------------------- plugins
 
 

@@ -425,6 +425,131 @@ async def cmd_changes_list(args: argparse.Namespace) -> int:
         await close_local(context)
 
 
+# ------------------------------------------------------------------ channels
+
+
+async def cmd_channels_list(args: argparse.Namespace) -> int:
+    """Show which channels are configured and where their webhooks belong."""
+    from hoursx.db.models import ChannelBinding, ChannelReply
+
+    context = await open_local()
+    try:
+        settings = context.services.settings
+        configured = context.services.channels.kinds()
+        if not configured:
+            _emit("No channels configured.")
+            _emit(
+                "Set HOURSX_TELEGRAM_TOKEN, HOURSX_WHATSAPP_TOKEN, or "
+                "HOURSX_GMAIL_ACCESS_TOKEN to enable one."
+            )
+            return 0
+
+        base = f"{settings.public_url.rstrip('/')}/v1/channels"
+        _emit(render.heading("configured"))
+        _emit(
+            render.table(
+                [{"channel": kind, "webhook": f"{base}/{kind}/webhook"} for kind in configured],
+                ["channel", "webhook"],
+            )
+        )
+
+        async with context.services.db.session() as db:
+            bindings = (
+                (
+                    await db.execute(
+                        select(ChannelBinding)
+                        .where(ChannelBinding.workspace_id == context.workspace_id)
+                        .order_by(ChannelBinding.created_at.desc())
+                        .limit(args.limit)
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            owed = (
+                (
+                    await db.execute(
+                        select(ChannelReply).where(
+                            ChannelReply.workspace_id == context.workspace_id,
+                            ChannelReply.status != "sent",
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+
+        if bindings:
+            _emit()
+            _emit(render.heading("conversations"))
+            _emit(
+                render.table(
+                    [
+                        {
+                            "channel": row.channel,
+                            "who": row.sender_display or row.sender_id,
+                            "session": row.session_id[:12],
+                        }
+                        for row in bindings
+                    ],
+                    ["channel", "who", "session"],
+                )
+            )
+        if owed:
+            _emit()
+            _emit(render.heading("unsettled replies"))
+            _emit(
+                render.table(
+                    [
+                        {
+                            "run": row.run_id[:12],
+                            "status": row.status,
+                            "attempts": row.attempts,
+                            "detail": row.detail,
+                        }
+                        for row in owed
+                    ],
+                    ["run", "status", "attempts", "detail"],
+                )
+            )
+        return 0
+    finally:
+        await close_local(context)
+
+
+async def cmd_channels_register(args: argparse.Namespace) -> int:
+    """Point Telegram at this deployment's ingress URL."""
+    from hoursx.channels.base import ChannelKind
+
+    context = await open_local()
+    try:
+        channel = context.services.channels.get(ChannelKind.TELEGRAM)
+        if channel is None:
+            _emit("Telegram is not configured; set HOURSX_TELEGRAM_TOKEN first.")
+            return 1
+        base = args.url or context.services.settings.public_url
+        url = f"{base.rstrip('/')}/v1/channels/telegram/webhook"
+        result = await channel.register_webhook(url)
+        _emit(result.summary)
+        return 0 if result.ok else 1
+    finally:
+        await close_local(context)
+
+
+async def cmd_channels_dispatch(args: argparse.Namespace) -> int:
+    """Settle any replies still owed, once."""
+    from hoursx.channels.dispatch import ChannelDispatcher
+
+    context = await open_local()
+    try:
+        dispatcher = ChannelDispatcher(context.services, context.services.channels)
+        sent = await dispatcher.sweep_once()
+        _emit(f"sent {sent} repl{'y' if sent == 1 else 'ies'}")
+        return 0
+    finally:
+        await close_local(context)
+
+
 async def _change_action(args: argparse.Namespace, action: str) -> int:
     from hoursx.remediation.guard import confirm_change
     from hoursx.remediation.ledger import list_changes, load_change, revert_change
@@ -452,6 +577,8 @@ async def _change_action(args: argparse.Namespace, action: str) -> int:
                 enabled=settings.system_ops_enabled,
                 allow_mutations=settings.system_mutations_enabled,
                 extra_sysctl_allowlist=frozenset(settings.system_sysctl_allowlist),
+                backend=settings.system_backend,
+                sysd_socket=settings.sysd_socket,
             )
             async with context.services.db.session() as db:
                 record = await load_change(
@@ -621,6 +748,35 @@ async def cmd_doctor(args: argparse.Namespace) -> int:
             _emit(f"  database {render.paint('unreachable', 'red')}  {exc}")
             problems.append("database is unreachable")
         _emit()
+
+        configured = context.services.channels.kinds()
+        if configured:
+            _emit(render.heading("Channels"))
+            for kind in configured:
+                _emit(f"  {kind.ljust(9)} {render.paint('configured', 'green')}")
+            _emit()
+            # A channel with nowhere to route is the quiet failure this checks
+            # for: messages arrive, the ingress answers 503, and nobody notices
+            # until someone asks why the bot stopped replying.
+            if not settings.channel_workspace_slug:
+                problems.append(
+                    "channels are configured but HOURSX_CHANNEL_WORKSPACE_SLUG is unset; "
+                    "inbound messages have no workspace to route to"
+                )
+            if not settings.channel_agent_handle:
+                problems.append(
+                    "channels are configured but HOURSX_CHANNEL_AGENT_HANDLE is unset; "
+                    "no agent will answer inbound messages"
+                )
+            if "telegram" in configured and not settings.telegram_webhook_secret:
+                warnings.append(
+                    "HOURSX_TELEGRAM_WEBHOOK_SECRET is unset; anyone who guesses the "
+                    "webhook URL can speak to the agent as if they were Telegram"
+                )
+            if settings.public_url.startswith("http://") and settings.environment == "production":
+                warnings.append(
+                    "HOURSX_PUBLIC_URL is not HTTPS; providers will refuse to deliver webhooks"
+                )
     finally:
         await close_local(context)
 

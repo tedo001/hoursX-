@@ -72,6 +72,26 @@ class HoursXSettings(BaseSettings):
     system_mutations_enabled: bool = False
     system_sysctl_allowlist: list[str] = Field(default_factory=list)
 
+    # --- channels (an unset credential means the channel simply does not exist) ---
+    # Webhooks arrive with no HoursX identity of their own, so inbound messages
+    # need a workspace and an agent named here to belong to.
+    channel_workspace_slug: str = ""
+    channel_agent_handle: str = ""
+    # Telegram: token from @BotFather; the secret is echoed back in a header on
+    # every update, and is the only thing distinguishing Telegram from anyone
+    # who guesses the URL.
+    telegram_token: str | None = Field(default=None, repr=False)
+    telegram_webhook_secret: str = Field(default="", repr=False)
+    # WhatsApp Business Cloud: the app secret signs webhooks, the token sends.
+    whatsapp_token: str | None = Field(default=None, repr=False)
+    whatsapp_app_secret: str = Field(default="", repr=False)
+    whatsapp_phone_number_id: str = ""
+    # Gmail: an OAuth2 access token; refreshing it is the operator's concern.
+    gmail_access_token: str | None = Field(default=None, repr=False)
+    gmail_address: str = ""
+    channel_reply_max_attempts: int = 5
+    channel_dispatch_interval_seconds: float = 2.0
+
     # --- quotas (0 disables the limit) ---
     max_concurrent_runs_per_workspace: int = 8
     max_runs_per_hour_per_workspace: int = 240
